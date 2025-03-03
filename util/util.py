@@ -28,8 +28,17 @@ if localFolder == None:
 # [INPUTS] None
 #
 # [OUTPUTS] 
-#  物件名称、種別、価格、住所から構成されるJSONデータのリスト
-#  [{'Name':'ABCアパート', 'Type':'アパート', 'Price':123456, 'Address': '東京都港区六本木9-8-1'}, ...],
+#  物件名称、種別、価格、住所、画像、PDF、位置から構成されるJSONデータのリスト
+#  [{
+#    'Name': <物件名>,
+#    'Type': <物件タイプ>, 
+#    'Price': <物件価格>, 
+#    'Address': <物件の住所>,
+#    'photo': <物件写真のBase64文字列: data:image/jpeg;base64,/9j/...>,
+#    'pdf': <物件PDFファイルのBase64文字列: data:application/pdf;base64,...>,
+#    'x': <物件のX座業>, 
+#    'y': <物件のY座業>
+#   }, ...],
 #
 # [NOTES]
 #  JSONファイルを検索するフォルダには物件情報JSONデータしかないと仮定する。
@@ -52,6 +61,10 @@ def getJsonData():
                 property['Type'] = jsonLoad['Type']
                 property['Price'] = jsonLoad['Price']
                 property['Address'] = jsonLoad['Address']
+                property['photo'] = jsonLoad['photo']
+                property['pdf'] = jsonLoad['pdf']
+                property['x'] = jsonLoad['x']
+                property['y'] = jsonLoad['y']
                 records.append(property)
         except Exception as e:
             print("[FILE]", file)
@@ -61,7 +74,61 @@ def getJsonData():
     return records
 #
 # HISTORY
+# [2] 2025-03-03 - Added photo, pdf, x and y
 # [1] 2025-02-20 - Initial version
+#
+
+#
+# [FUNCTION] printJson()
+#
+# [DESCRIPTION]
+#  JSONデータをコンソールに表示するデバッグ向け関数。Base64文字の先頭部分だけ表示する。
+#
+# [INPUTS]
+#  jsonData - 表示するJSONデータ
+#
+# [OUTPUTS] なし
+#
+# [NOTES]
+#  JSONデータは複製し、データ内にキーphotoおよびpdfが存在すれば、50文字までで切り取る。
+#
+def printJson(jsonData):
+
+    # 複製を作成
+    copiedJson = jsonData.copy() 
+
+    if 'photo' in copiedJson.keys(): # photoキーが存在するか確認
+        copiedJson['photo'] = copiedJson['photo'][0:50]
+
+    if 'pdf' in copiedJson.keys(): # pdfキーが存在するか確認
+        copiedJson['pdf'] = copiedJson['pdf'][0:50]
+    
+    print("[JSON]", copiedJson)
+
+# HISTORY
+# [1] 2025-03-03 - Initial version
+#
+
+#
+# [FUNCTION] printListList()
+#
+# [DESCRIPTION]
+#  JSONデータのリストをコンソールに表示するデバッグ向け関数。Base64文字の先頭部分だけ表示する。
+#
+# [INPUTS]
+#  list - 表示するJSONデータのリスト
+#
+# [OUTPUTS] なし
+#
+# [NOTES]
+#
+def printList(list):
+
+    for element in list:
+        printJson(element)
+
+# HISTORY
+# [1] 2025-03-03 - Initial version
 #
 
 #
@@ -87,8 +154,8 @@ def getJsonData():
 #    "_width": <横幅>,
 #    "_height": <高さ>,
 #    "name": <物件名>,
-#    "photo": <物件写真のBase64文字列: data:image/jpeg;base64,/9j/4AAQSkZJR...>,
-#    "pdf": <物件PDFファイルのBase64文字列: data:application/pdf;base64,JVBERi0xLjQNCiXi4...>
+#    "photo": <物件写真のBase64文字列: data:image/jpeg;base64,/9j/...>,
+#    "pdf": <物件PDFファイルのBase64文字列: data:application/pdf;base64,...>
 #  }
 #  bType - 'photo' あるいは 'pdf', jsonDataからBase64文字列を取得するため用いる
 #
@@ -152,6 +219,10 @@ def storeBinaryFile(jsonData, bType):
 #    "Type": <物件タイプ>,
 #    "Price": <物件価格>,
 #    "Address": <物件の住所>
+#    "photo": <物件写真のBase64文字列: data:image/jpeg;base64,/9j/...>,
+#    "pdf": <物件PDFファイルのBase64文字列: data:application/pdf;base64,...>,
+#    "x": <X座標>,
+#    "y": <Y座標>,
 #  }
 #
 # [OUTPUTS] 

@@ -13,7 +13,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
-from util.util import getJsonData, storeBinaryFile, storeJsonFile
+from util.util import getJsonData, printJson, printList, storeBinaryFile, storeJsonFile
 
 app = FastAPI()
 app.mount(path="/static", app=StaticFiles(directory="static"), name="static")
@@ -74,11 +74,20 @@ async def topPage(request: Request):
 # [INPUTS] None
 # 
 # [OUTPUTS]
-#  物件名称、種別、価格、住所から構成されるJSONデータ
+#  物件名称、種別、価格、住所、画像、PDF、位置から構成されるJSONデータ
 #  {
-#    "keys": ["Name", "Type", "Price", "Address"],
+#    "keys": ['Name', 'Type', 'Price', 'Address', 'photo', 'pdf', 'x', 'y'],
 #    "records": [
-#        {'Name':'ABCアパート', 'Type':'アパート', 'Price':123456, 'Address': '東京都港区六本木9-8-1'}, ...
+#       {
+#        'Name': <物件名>,
+#        'Type': <物件タイプ>, 
+#        'Price': <物件価格>, 
+#        'Address': <物件の住所>,
+#        'photo': <物件写真のBase64文字列: data:image/jpeg;base64,/9j/...>,
+#        'pdf': <物件PDFファイルのBase64文字列: data:application/pdf;base64,...>,
+#        'x': <物件のX座業>, 
+#        'y': <物件のY座業>
+#       }, ...
 #    ],
 #    "message": None
 #  }
@@ -89,16 +98,17 @@ async def topPage(request: Request):
 @app.get("/get/json")
 def getJsonFile():
     results = {}
-    results['keys'] = ['Name', 'Type', 'Price', 'Address']
+    results['keys'] = ['Name', 'Type', 'Price', 'Address', 'photo', 'pdf', 'x', 'y']
     results['records'] = getJsonData()
     results['message'] = None
 
     if is_reload_enabled():
-        print("[JSON]", results)
+        printList(results['records'])
        
     return results
 #
 # HISTORY
+# [2] 2025-03-03 - Added photo, pdf, x and y
 # [1] 2025-02-20 - Initial version
 #
 
@@ -107,7 +117,7 @@ def getJsonFile():
 # End Point: /upload/binary
 #
 # [DESCRIPTION]
-#  eYACHO/GEMBA Noteから送信されてきた画像データとPDFデータをファイルに保存する。
+#  eYACHO/GEMBA Noteから送信されてきた画像データとPDFデータをそれぞれファイルとして保存する。
 #
 # [INPUTS] 
 #  request - bodyにクライアント（eYACHO/GEMBA Note）からの情報が格納されている
@@ -116,8 +126,8 @@ def getJsonFile():
 #      "_pageId": <ページID>, 
 #      ...,
 #      "name": "メタモジマンション",
-#      "photo": "data:image/jpeg;base64,/9j/4AAQSkZJR...", 
-#      "pdf": "data:application/pdf;base64,JVBERi0xLjQNCiXi4..."
+#      "photo": "data:image/jpeg;base64,/9j/...", 
+#      "pdf": "data:application/pdf;base64,..."
 #      ...}
 # 
 # [OUTPUTS]
@@ -193,11 +203,15 @@ def uploadBinaryFile(jsonData: dict):
 #    {'message': <メッセージ>}
 # 
 # [NOTES]
-#  タグスキーマPropertyの以下のタグプロパティの値を含んだすべてのキーを保存する
+#  タグスキーマpropertyDetailsの以下のタグプロパティの値を含んだすべてのキーを保存する
 #    Name - 物件の名称
 #    Type - 物件の種別
 #    Price - 物件の価格
 #    Address - 物件の住所
+#    photo - 物件写真のBase64文字列
+#    pdf   - 物件PDFファイルのBase64文字列
+#    x - 物件のX座業（緯度）
+#    y - 物件のY座業（経度）
 #
 @app.post("/upload/json")
 def uploadJsonFile(jsonData: dict):
@@ -205,7 +219,7 @@ def uploadJsonFile(jsonData: dict):
     results['message'] = "アップロードが完了しました"
 
     if is_reload_enabled():
-        print("[JSON]", jsonData)
+        printJson(jsonData)
         
     if ('Name' in jsonData) == False:
         results['message'] = "物件名称が設定されていません"
@@ -222,5 +236,6 @@ def uploadJsonFile(jsonData: dict):
     return results
 #
 # HISTORY
+# [2] 2025-03-03 - Called printJson()
 # [1] 2025-02-20 - Initial version
 #

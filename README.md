@@ -80,16 +80,25 @@ uvicorn main:app
 |  キー  | 説明  |
 | ---- | ---- |
 | keys | recordsキーの値に含まれるキー一覧 |
-| records | 物件名称、種別、価格、住所から構成されるJSONデータのリスト |
+| records | 物件名称、種別、価格、住所、画像、PDF、位置から構成されるJSONデータのリスト |
 | message | メッセージテキスト |
 
 レスポンス例:
 
 ```bash
 {
-  "keys": ["Name", "Type", "Price", "Address"],
+  "keys": ["Name", "Type", "Price", "Address", "photo", "pdf", "x", "y"],
   "records": [
-    {'Name':'ABCアパート', 'Type':'アパート', 'Price':123456, 'Address': '東京都港区六本木9-8-1'}, 
+    {
+      'Name':'ABCアパート', 
+      'Type':'アパート', 
+      'Price':123456, 
+      'Address': '東京都港区六本木9-8-1',
+      'photo': 'data:image/jpeg;base64,/9j/...',
+      'pdf': 'data:application/pdf;base64,...',
+      'x': 35.738609, 
+      'y': 139.828122
+    }, 
     ...
   ],
   "message": None
@@ -98,7 +107,7 @@ uvicorn main:app
 
 #### /upload/binary (POSTメソッド)
 
-eYACHO/GEMBA Noteアプリから送信されてきた画像とPDFをファイルに保存する。
+eYACHO/GEMBA Noteアプリから送信されてきた画像とPDFをそれぞれファイルとして保存する。
 
 リクエストボディ(JSON)の構造：
 
@@ -136,6 +145,10 @@ eYACHO/GEMBA Noteアプリから送信されてきた物件情報をJSONファ�
 | Type | 物件の種別 |
 | Price | 物件の価格 |
 | Address | 物件の住所 |
+| photo | 物件写真のBase64文字列 |
+| pdf | 物件PDFファイルのBase64文字列 |
+| x | 物件のX軸（緯度） |
+| y | 物件のY軸（経度） |
 
 上記のキーの他、eYACHO/GEMBA Noteが与えるシステムタグプロパティ（例えば、_userName）も含まれる。
 
@@ -157,51 +170,14 @@ Nameキーの値が設定されていないとファイルに保存されない�
 
 ### eYACHO/GEMBA Noteとのデータ連携テスト
 
-- 「[eYACHO/GEMBA Noteでアプリケーションを作る～ 実践的なアプリ開発 ～](https://product.metamoji.com/manual/gemba_apps/gemba_dev_advanced/jp/)」のバックアップファイルをダウンロードして、eYACHO/GEMBA Note製品に復元する。
+- 「[eYACHO/GEMBA Noteでアプリケーションを作る～ 実践的なアプリ開発 ～](https://product.metamoji.com/manual/gemba_apps/gemba_dev_advanced/jp/)」（GEMBAアプリ開発実践本）のバックアップファイルをダウンロードして、eYACHO/GEMBA Note製品に復元する。
   - 開発オプションが必要
   - こちらからダウンロードする → [PracticalAppDev__<バージョン>__backup.gncproj](https://product.metamoji.com/manual/gemba_apps/gemba_dev_advanced/jp/contents/backup/PracticalAppDev__0.2.0__backup.gncproj)
 - サーバーが起動していることを確認する。
   - Windowsアプリからローカルサーバーにアクセスする場合は、管理者モードで利用対象アプリのループバックを有効にする → [Windowsで開発する際の注意点](./NoticesForWindows.md)
-
-#### eYACHO/GEMBA Noteから送信テスト
-
-開発パッケージフォルダ以下にあるサブフォルダ **データ連携** にあるノート「**RESTサーバーへ送信**」を開く。
-
-**JSONファイルをアップロードする**  
-
-- 物件情報フォームに物件名称が設定されていることを確認する。
-  - タイプ、価格、住所も適当に入力する。なくてもよい。
-- ページ上の **アップロード** ボタンをクリックする。
-  - 「アップロードが完了しました」とダイアログが現れると成功。
-  - 物件名称が設定されていないと、「物件名称が設定されていません」と表示される。
-  - ファイル保存が失敗すると「JSONファイルが保存されませんでした」と表示される。
-- 環境変数LOCAL_FOLDERに設定してあるフォルダにJSONファイルが格納されていることを確認する。
-  - ファイルをテキストエディタで開き、内容を確認する。
-
-**画像・PDFファイルをアップロードする**  
-
-- 物件名称、物件画像、PDFファイルが設定されていることを確認する。
-- ページ上の **アップロード** ボタンをクリックする。
-  - 「アップロードが完了しました」とダイアログが現れると成功。
-  - 物件名称、物件画像、PDFファイルが設定されていないと、「...が設定されていません」と表示される。
-  - ファイル保存が失敗すると「...ファイルが保存されませんでした」と表示される。
-- 環境変数LOCAL_FOLDERに設定してあるフォルダに画像とPDFファイルが格納されていることを確認する。
-  - ファイルをクリックして画像やPDFの内容が表示されるか確かめる。
-
-#### eYACHO/GEMBA Noteで受信テスト
-
-開発パッケージフォルダにあるサブフォルダ **データ連携** にあるノート「**RESTサーバーから取得**」を開く。
-
-**保存されたJSONファイルの内容を取得する**  
-
-- 環境変数LOCAL_FOLDERに設定してあるフォルダにJSONファイルが保存されていることを確認する。
-- ページ上の **最新に更新** ボタンをクリックする。
-  - 各JSONファイルのName、Type、Price、Addressの値が表形式として出力される。
-
-#### 注意事項
-
-サーバーのポート番号を変更した場合やリモートサーバーで運用可能にした時は、関連するボタンコマンドやアグリゲーション検索条件（RESTコネクタ）の **URL** を変更する。  
+- 上記「GEMBAアプリ開発実践本」の第6章の動作確認6-4に従い、REST連携動作を確認する。
 
 ### 更新履歴
 
+- 2025-03-03 画像、PDF、位置をJSONに追加
 - 2025-02-20 初版
