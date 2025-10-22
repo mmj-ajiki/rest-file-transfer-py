@@ -172,7 +172,7 @@ Nameキーの値が設定されていないとファイルに保存されない�
 
 - 「[eYACHO/GEMBA Noteでアプリケーションを作る～ 実践的なアプリ開発 ～](https://product.metamoji.com/manual/gemba_apps/gemba_dev_advanced/jp/)」（GEMBAアプリ開発実践本）のバックアップファイルをダウンロードして、eYACHO/GEMBA Note製品に復元する。
   - 開発オプションが必要
-  - こちらからダウンロードする → [PracticalAppDev__<バージョン>__backup.gncproj](https://product.metamoji.com/manual/gemba_apps/gemba_dev_advanced/jp/contents/backup/PracticalAppDev__0.2.0__backup.gncproj)
+  - こちらからダウンロードする → [PracticalAppDev__<バージョン>__backup.gncproj](https://product.metamoji.com/manual/gemba_apps/gemba_dev_advanced/jp/contents/backup/PracticalAppDev__0.2.2__backup.gncproj)
 - サーバーが起動していることを確認する。
   - Windowsアプリからローカルサーバーにアクセスする場合は、管理者モードで利用対象アプリのループバックを有効にする → [Windowsで開発する際の注意点](./NoticesForWindows.md)
 - 上記「GEMBAアプリ開発実践本」の第6章の動作確認6-4に従い、REST連携動作を確認する。
