@@ -1,241 +1,103 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# [FILE] main.py
-#
-# [DESCRIPTION]
-#  eYACHO/GEMBA Noteからファイルをアップロード、そのファイルからeYACHO/GEMBA Noteへデータを取り込むRESTメソッドを定義する。
-# 
-# [NOTES]
-#
+"""
+[FILE] main.py
+[DESCRIPTION] eYACHO/GEMBA NoteとのREST API通信エンドポイントを定義する。
+
+[HISTORY]
+2026-01-07: Followed PEP 8
+2025-03-03: Added photo, pdf, x and y support.
+2025-02-20: Initial version.
+"""
+
 import sys
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
-from util.util import getJsonData, printJson, printList, storeBinaryFile, storeJsonFile
+import util.util as util
 
 app = FastAPI()
 app.mount(path="/static", app=StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-#
-# [FUNCTION] is_reload_enabled()
-#
-# [DESCRIPTION]
-#  実行するコマンドに--reloadが含まれるか判定する。
-#
-# [INPUTS] None
-#
-# [OUTPUTS]
-#  True: 含まれる False: 含まれない
-#
-# [NOTES]
-#  Trueの場合はデバッグ実行とみなし、JSONデータをコンソール上に表示するために用いる。
-#
+
 def is_reload_enabled():
+    """
+    実行コマンドに --reload が含まれるか（デバッグモードか）を判定する。
+
+    Returns:
+        bool: 含まれる場合は True。
+    """
     return "--reload" in sys.argv
-#
-# HISTORY
-# [1] 2025-02-20 - Initial version
-#
 
-#
-# GET Method
-# End Point: /
-#
-# [DESCRIPTION]
-#  動作確認用のトップページを開く。
-#
-# [INPUTS]
-#  request - リクエスト
-# 
-# [OUTPUTS]
-# 
-# [NOTES]
-#  Web画面上に単に、"GEMBA File Transfer REST Server"と表示するのみ。
-#
+
 @app.get("/", response_class=HTMLResponse)
-async def topPage(request: Request):
-    
-    return templates.TemplateResponse("top.html", {"request": request, "title": "GEMBA File Transfer REST Server"})
-#
-# HISTORY
-# [1] 2025-02-20 - Initial version
-#
+async def top_page(request: Request):
+    """トップ画面（動作確認用）を表示する。"""
+    return templates.TemplateResponse(
+        "top.html", 
+        {"request": request, "title": "GEMBA File Transfer REST Server"}
+    )
 
-#
-# GET Method
-# End Point: /get/json
-#
-# [DESCRIPTION]
-#  ローカルフォルダに保存されているJSONファイルの内容を取得する。
-#
-# [INPUTS] None
-# 
-# [OUTPUTS]
-#  物件名称、種別、価格、住所、画像、PDF、位置から構成されるJSONデータ
-#  {
-#    "keys": ['Name', 'Type', 'Price', 'Address', 'photo', 'pdf', 'x', 'y'],
-#    "records": [
-#       {
-#        'Name': <物件名>,
-#        'Type': <物件タイプ>, 
-#        'Price': <物件価格>, 
-#        'Address': <物件の住所>,
-#        'photo': <物件写真のBase64文字列: data:image/jpeg;base64,/9j/...>,
-#        'pdf': <物件PDFファイルのBase64文字列: data:application/pdf;base64,...>,
-#        'x': <物件のX座業>, 
-#        'y': <物件のY座業>
-#       }, ...
-#    ],
-#    "message": None
-#  }
-# 
-# [NOTES]
-#  関数getJsonData()は、エンドポイント/upload/jsonで保存したJSONファイルの内容を読み込みJSONデータとする。
-#
+
 @app.get("/get/json")
-def getJsonFile():
-    results = {}
-    results['keys'] = ['Name', 'Type', 'Price', 'Address', 'photo', 'pdf', 'x', 'y']
-    results['records'] = getJsonData()
-    results['message'] = None
+def get_json_file():
+    """保存済みのJSONデータを取得して返す。"""
+    results = {
+        'keys': ['Name', 'Type', 'Price', 'Address', 'photo', 'pdf', 'x', 'y'],
+        'records': util.get_json_data(),
+        'message': None
+    }
 
     if is_reload_enabled():
-        printList(results['records'])
+        util.print_list(results['records'])
        
     return results
-#
-# HISTORY
-# [2] 2025-03-03 - Added photo, pdf, x and y
-# [1] 2025-02-20 - Initial version
-#
 
-#
-# POST Method
-# End Point: /upload/binary
-#
-# [DESCRIPTION]
-#  eYACHO/GEMBA Noteから送信されてきた画像データとPDFデータをそれぞれファイルとして保存する。
-#
-# [INPUTS] 
-#  request - bodyにクライアント（eYACHO/GEMBA Note）からの情報が格納されている
-#    {..., 
-#      "_noteLink": <ノートリンク>, 
-#      "_pageId": <ページID>, 
-#      ...,
-#      "name": "メタモジマンション",
-#      "photo": "data:image/jpeg;base64,/9j/...", 
-#      "pdf": "data:application/pdf;base64,..."
-#      ...}
-# 
-# [OUTPUTS]
-#  次のJSONを返す
-#    {'message': <メッセージ>}
-# 
-# [NOTES]
-#  タグスキーマpropertyPhotoの以下のタグプロパティが設定されていることを前提とする
-#    name: 物件名称
-#    photo: 物件画像
-#    pdf: PDFファイル
-#
+
 @app.post("/upload/binary")
-def uploadBinaryFile(jsonData: dict):
-    results = {}
-    results['message'] = "アップロードが完了しました"
+def upload_binary_file(json_data: dict):
+    """画像およびPDFバイナリをBase64データからアップロード・保存する。"""
+    results = {'message': "アップロードが完了しました"}
 
-    if ('name' in jsonData) == False:
-        results['message'] = "物件名称が設定されていません"
-        return results
+    # 必須キーの検証
+    for key, label in [('name', "物件名称"), ('photo', "物件画像"), ('pdf', "PDF")]:
+        if key not in json_data:
+            results['message'] = f"{label}が設定されていません"
+            return results
     
-    if ('photo' in jsonData) == False:
-        results['message'] = "物件画像が設定されていません"
-        return results
-
-    if ('pdf' in jsonData) == False:
-        results['message'] = "PDFが設定されていません"
-        return results
-    
-    fileName = storeBinaryFile(jsonData, 'photo')
-    if fileName == None:
-        results['message'] = "画像ファイルが保存できませんでした"
-        return results
-
-    if is_reload_enabled():
-        print("[IMG SAVED]", fileName)
-
-    fileName = storeBinaryFile(jsonData, 'pdf')
-    if fileName == None:
-        results['message'] = "PDFファイルが保存できませんでした"
-        return results
-
-    if is_reload_enabled():
-        print("[PDF SAVED]", fileName)
+    # 画像とPDFの保存実行
+    for b_type in ['photo', 'pdf']:
+        file_path = util.store_binary_file(json_data, b_type)
+        if file_path is None:
+            results['message'] = f"{b_type}ファイルが保存できませんでした"
+            return results
+        
+        if is_reload_enabled():
+            print(f"[{b_type.upper()} SAVED]", file_path)
         
     return results
-#
-# HISTORY
-# [1] 2025-02-20 - Initial version
-#
 
-#
-# POST Method
-# End Point: /upload/json
-#
-# [DESCRIPTION]
-#  eYACHO/GEMBA Noteから送信されてきた物件情報をJSONファイルに保存する。
-#
-# [INPUTS] 
-#  request - bodyにクライアント（eYACHO/GEMBA Note）からの画像情報が格納されている
-#    {..., 
-#      "_noteLink": <ノートリンク>, 
-#      "_pageId": <ページID>, 
-#      ...,
-#      "Name": "メタモジマンション",
-#      "Type": "アパート", 
-#      "Price": 78600000,
-#      "Address": "東京都港区六本木...", 
-#      ...}
-# 
-# [OUTPUTS]
-#  次のJSONを返す
-#    {'message': <メッセージ>}
-# 
-# [NOTES]
-#  タグスキーマpropertyDetailsの以下のタグプロパティの値を含んだすべてのキーを保存する
-#    Name - 物件の名称
-#    Type - 物件の種別
-#    Price - 物件の価格
-#    Address - 物件の住所
-#    photo - 物件写真のBase64文字列
-#    pdf   - 物件PDFファイルのBase64文字列
-#    x - 物件のX座業（緯度）
-#    y - 物件のY座業（経度）
-#
+
 @app.post("/upload/json")
-def uploadJsonFile(jsonData: dict):
-    results = {}
-    results['message'] = "アップロードが完了しました"
+def upload_json_file(json_data: dict):
+    """物件情報のJSONデータをファイルとして保存する。"""
+    results = {'message': "アップロードが完了しました"}
 
     if is_reload_enabled():
-        printJson(jsonData)
+        util.print_json(json_data)
         
-    if ('Name' in jsonData) == False:
+    if 'Name' not in json_data:
         results['message'] = "物件名称が設定されていません"
         return results
        
-    fileName = storeJsonFile(jsonData)
-    if fileName == None:
+    file_path = util.store_json_file(json_data)
+    if file_path is None:
         results['message'] = "JSONファイルが保存できませんでした"
         return results
 
     if is_reload_enabled():
-        print("[JSON SAVED]", fileName)
+        print("[JSON SAVED]", file_path)
         
     return results
-#
-# HISTORY
-# [2] 2025-03-03 - Called printJson()
-# [1] 2025-02-20 - Initial version
-#
