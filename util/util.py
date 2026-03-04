@@ -5,6 +5,7 @@
 [DESCRIPTION] RESTメソッドで利用するユーティリティ関数を定義する。
 
 [HISTORY]
+2026-03-05: Pretty Print
 2026-01-07: Followed PEP 8
 2025-03-03: Added photo, pdf, x and y.
 2025-02-20: Initial version.
@@ -59,39 +60,42 @@ def get_json_data():
     return records
 
 
-def print_json(json_data):
+def print_json(title: str, json_data: dict):
     """
     JSONデータをコンソールに表示する。Base64文字列は先頭のみ表示する。
 
     Args:
+        title (str): 見出し
         json_data (dict): 表示対象のJSONデータ。
     """
     copied_json = json_data.copy()
     for key in ['photo', 'pdf']:
         if key in copied_json and isinstance(copied_json[key], str):
             copied_json[key] = copied_json[key][:50]
-    
-    print("[JSON]", copied_json)
+
+    pretty_json = json.dumps(copied_json, indent=4)
+    print(title, pretty_json)
 
 
-def print_list(data_list):
+def print_list(title: str, data_list: list):
     """
     JSONデータのリストを順にコンソールへ表示する。
 
     Args:
-        data_list (list[dict]): 表示対象のリスト。
+        title (str): 見出し
+        data_list (list): 表示対象のリスト。
     """
     for element in data_list:
-        print_json(element)
+        print_json(title, element)
 
 
-def store_binary_file(json_data, b_type):
+def store_binary_file(json_data: dict, b_type: str):
     """
     Base64文字列からバイナリファイルをデコードして保存する。
 
     Args:
-        json_data (dict): 'name' および b_type で指定されたキーを持つデータ。
-        b_type (str): 'photo' または 'pdf'。
+        json_data (dict): ファイル情報を含む辞書
+        b_type (str): 保存対象のキー ('photo' または 'pdf')
 
     Returns:
         str | None: 成功時は保存した絶対パス、失敗時は None。
@@ -114,7 +118,7 @@ def store_binary_file(json_data, b_type):
         return None
 
 
-def store_json_file(json_data):
+def store_json_file(json_data: dict):
     """
     JSONデータをファイルとして保存する。
 
