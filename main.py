@@ -5,6 +5,7 @@
 [DESCRIPTION] eYACHO/GEMBA NoteとのREST API通信エンドポイントを定義する。
 
 [HISTORY]
+2026-04-22: Fixed TemplateResponse() due to the Starlette change
 2026-03-05: Added /echo method
 2026-01-07: Followed PEP 8
 2025-03-03: Added photo, pdf, x and y support.
@@ -37,8 +38,9 @@ def is_reload_enabled():
 async def top_page(request: Request):
     """トップ画面（動作確認用）を表示する。"""
     return templates.TemplateResponse(
-        "top.html", 
-        {"request": request, "title": "GEMBA File Transfer REST Server"}
+        name="top.html", 
+        context={"request": request, "title": "GEMBA File Transfer REST Server"},
+        request=request
     )
 
 
